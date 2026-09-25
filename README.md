@@ -42,6 +42,28 @@ Traditional document management systems are not purpose-built for forensic and c
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## 🌐 Public Showcase — Evidence Integrity Demo
+
+The repository now includes a standalone browser demo at the repository root (index.html, styles.css, app.js). It demonstrates the core public-showcase flow without a backend:
+
+1. **Evidence Passport** — synthetic evidence metadata and a reproducible SHA-256 baseline.
+2. **Local SHA-256 Verifier** — select any local file; hashing happens entirely in the browser and the file is not uploaded.
+3. **Tamper Attack Simulator** — changes one byte in an in-memory synthetic payload and shows the resulting integrity failure.
+4. **Chain-of-Custody Visualizer** — verifies a deterministic hash-linked event sequence in the browser.
+5. **Security Boundaries** — explicitly distinguishes integrity verification from authenticity, blockchain immutability, and legal admissibility.
+
+### Run locally
+
+Because the showcase is static, it can be opened through any static web server. For example:
+
+```bash
+python -m http.server 8000
+```
+
+Then open http://localhost:8000/.
+
+> The showcase uses synthetic data only. It is intentionally separate from production case storage and does not require Supabase or a backend.
+
 ## 📋 Interactive Verification & Demonstration Path
 1. Open the [OpenEdit Vault Demo](https://openedits.lovable.app/vault).
 2. Open case **FIR No. 204/2026**.
