@@ -1,0 +1,45 @@
+# Logs
+logs/
+*.log
+
+# Dependencies
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-cache/
+.yarn-integrity
+
+# Build output
+dist/
+build/
+.next/
+out/
+coverage/
+
+# Vite
+.vite/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Cache / tooling
+.eslintcache
+.parcel-cache/
+.turbo/
+.cache/
+
+# Temporary files
+*.tmp
+*.temp
