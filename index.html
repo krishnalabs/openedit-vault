@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="OpenEdit Vault — browser-first digital evidence integrity showcase for SIH 2026.">
+  <title>OpenEdit Vault — Evidence Integrity Demo</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">OE</span><span>OpenEdit Vault</span></div>
+    <span class="badge">SIH 2026 • Prototype</span>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">EVIDENCE INTEGRITY WORKSPACE</p>
+        <h1>Verify digital evidence.<br><span>See exactly what changed.</span></h1>
+        <p class="hero-copy">A browser-first showcase for SHA-256 verification, tamper detection, and a hash-linked chain-of-custody prototype — using synthetic case data.</p>
+        <div class="hero-actions">
+          <button class="btn primary" data-step="verify">1. Verify Evidence</button>
+          <button class="btn secondary" data-step="tamper">2. Simulate Tamper</button>
+          <button class="btn secondary" data-step="chain">3. Verify Chain</button>
+        </div>
+      </div>
+      <div class="hero-status">
+        <div class="status-dot"></div>
+        <div><strong>Local-first demo</strong><small>Files are processed in your browser</small></div>
+      </div>
+    </section>
+
+    <div class="notice"><strong>Synthetic demo:</strong> FIR 204/2026 — State vs. Cyber Syndicate. No real personal data. This prototype does not by itself establish legal admissibility, authenticity, immutability, or government certification.</div>
+
+    <section id="passport" class="panel step-target">
+      <div class="section-head">
+        <div><p class="eyebrow">01 • EVIDENCE PASSPORT</p><h2>Selected evidence</h2></div>
+        <span id="integrityPill" class="pill success">INTEGRITY VERIFIED</span>
+      </div>
+      <div class="passport-grid">
+        <div class="evidence-card">
+          <div class="file-icon">PDF</div>
+          <div><strong id="evidenceName">bank_transfer_report.pdf</strong><small>Evidence ID: EV-204-017</small></div>
+          <button class="icon-btn" id="copyHash" title="Copy SHA-256">⧉</button>
+        </div>
+        <div class="meta"><span>Type</span><strong>application/pdf</strong></div>
+        <div class="meta"><span>Captured</span><strong>2026-08-14 10:42:18 UTC</strong></div>
+        <div class="meta"><span>Source</span><strong>Forensic workstation FWS-07</strong></div>
+      </div>
+      <div class="hash-box"><span>SHA-256</span><code id="storedHash"></code></div>
+    </section>
+
+    <section id="verifier" class="panel step-target">
+      <div class="section-head">
+        <div><p class="eyebrow">02 • LOCAL VERIFIER</p><h2>Verify any local file</h2></div>
+        <span class="chip">NO UPLOAD</span>
+      </div>
+      <p class="muted">Choose a file. Its bytes never leave this browser. SHA-256 is calculated with the Web Crypto API.</p>
+      <label class="dropzone" id="dropzone" for="fileInput">
+        <input id="fileInput" type="file" hidden>
+        <span class="drop-icon">↑</span>
+        <strong>Choose a file to hash</strong>
+        <small>Click to browse • local processing only</small>
+      </label>
+      <div id="fileResult" class="result hidden"></div>
+      <div class="compare-row">
+        <input id="compareHash" aria-label="Hash to compare" placeholder="Paste expected SHA-256 hash (optional)">
+        <button class="btn secondary" id="compareBtn">Compare</button>
+      </div>
+      <div id="compareResult" class="compare-result hidden"></div>
+    </section>
+
+    <section id="tamper" class="panel step-target">
+      <div class="section-head">
+        <div><p class="eyebrow">03 • TAMPER ATTACK SIMULATOR</p><h2>See integrity fail in real time</h2></div>
+        <span class="chip warning">SIMULATION</span>
+      </div>
+      <p class="muted">This mutates a small in-memory synthetic payload. It does not modify your files.</p>
+      <div class="attack-grid">
+        <div class="hash-card"><span>ORIGINAL</span><code id="originalHash"></code><strong>✓ Integrity baseline</strong></div>
+        <div class="arrow">→</div>
+        <div class="hash-card danger"><span>AFTER TAMPER</span><code id="tamperedHash"></code><strong id="tamperState">Not simulated</strong></div>
+      </div>
+      <button class="btn danger-btn" id="tamperBtn">Simulate byte-level change</button>
+      <button class="btn secondary" id="resetTamper">Reset</button>
+    </section>
+
+    <section id="chain" class="panel step-target">
+      <div class="section-head">
+        <div><p class="eyebrow">04 • CHAIN OF CUSTODY</p><h2>Hash-linked event history</h2></div>
+        <button class="btn primary small" id="verifyChain">Verify chain</button>
+      </div>
+      <p class="muted">Each event references the previous event hash. This is a prototype ledger model, not a blockchain.</p>
+      <div id="timeline" class="timeline"></div>
+      <div id="chainResult" class="chain-result"></div>
+    </section>
+
+    <section class="how">
+      <p class="eyebrow">HOW IT WORKS</p>
+      <div class="how-grid">
+        <div><b>01</b><strong>Hash locally</strong><span>Web Crypto calculates a SHA-256 digest in-browser.</span></div>
+        <div><b>02</b><strong>Compare</strong><span>A different byte sequence produces a different digest.</span></div>
+        <div><b>03</b><strong>Link events</strong><span>Custody events carry previous/current hashes for verification.</span></div>
+      </div>
+    </section>
+
+    <section class="boundaries">
+      <p class="eyebrow">SECURITY BOUNDARIES</p>
+      <div class="boundary-grid">
+        <span>✓ Local file verification</span><span>✓ SHA-256 integrity checks</span><span>✓ Hash-linked custody prototype</span>
+        <span>× SHA-256 does not prove authenticity</span><span>× Hash links are not blockchain immutability</span><span>× Legal/forensic review still required</span>
+      </div>
+    </section>
+  </main>
+
+  <footer>OpenEdit Vault • SIH 2026 prototype • Browser-first evidence integrity showcase</footer>
+  <script src="./app.js"></script>
+</body>
+</html>
