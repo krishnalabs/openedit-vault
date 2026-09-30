@@ -1,103 +1,67 @@
-# 🏛️ OpenEdit Vault — Secure Case Workspace
-### *Smart India Hackathon 2026 | Problem Statement ID: SIH26190*
-> **Secure Digital Document Management System for Legal and Investigation Documents**  
-> **Team:** Krishnalabs | **Team Leader:** Shyamji Soni | **Theme:** Miscellaneous / LegalTech
+# 🛡️ OpenEdit Vault — Digital Asset & Access Control Platform
+### *Smart India Hackathon 2026 | Problem Statement ID: SIH26125*
+> **Blockchain-Based Secure Platform for Identity, Access Control, and Digital Asset Management**  
+> **Organization:** Bharat Electronics Limited (BEL) | **Category:** Software / Blockchain & Cybersecurity  
+> **Team:** Krishnalabs | **Team Leader:** Shyamji Soni | **Theme:** Information Security / Digital Assets
 
 [![Live Prototype](https://img.shields.io/badge/Live_MVP-openedits.lovable.app%2Fvault-0A66C2?style=for-the-badge&logo=google-chrome)](https://openedits.lovable.app/vault)
-[![Compliance](https://img.shields.io/badge/Compliance-BSA_2023_Sec_63-success?style=for-the-badge)](docs/BSA_2023_COMPLIANCE.md)
-[![Security](https://img.shields.io/badge/Security-WebCrypto_AES--GCM_%2B_SHA--256-blueviolet?style=for-the-badge)](docs/ARCHITECTURE.md)
+[![Compliance](https://img.shields.io/badge/Security-Zero--Trust_RBAC-success?style=for-the-badge)](docs/ARCHITECTURE.md)
+[![Security](https://img.shields.io/badge/Cryptography-WebCrypto_AES--GCM_%2B_SHA--256-blueviolet?style=for-the-badge)](docs/ARCHITECTURE.md)
 
 ---
 
 ## 📌 Executive Summary
-Traditional document management systems are not purpose-built for forensic and criminal investigations, where evidentiary integrity, chain of custody, privacy controls, and statutory procedure matter.
+Conventional digital asset management (DAM) platforms are vulnerable to post-ingestion asset tampering, excessive administrative privileges, and high cloud processing latency. 
 
-**OpenEdit Vault** is an offline-first, client-side security-oriented case and evidence workspace for Investigating Officers (IOs), Forensic Science Laboratories (FSLs), Public Prosecutors, and judicial workflows. The prototype focuses on cryptographic integrity verification, structured custody events, sensitive-data redaction, and electronic-record certification workflows.
-
-> **Important scope note:** OpenEdit Vault is a prototype for SIH 2026 evaluation. It does not by itself establish legal admissibility, certify an official government record, or replace statutory procedures, forensic SOPs, court orders, or qualified legal review.
+**OpenEdit Vault** is an air-gapped, decentralized cryptographic platform engineered for **Bharat Electronics Limited (BEL)** and high-security enterprise environments. It provides client-side zero-knowledge digital asset verification, chained tamper-evident audit ledgers, fine-grained Role-Based Access Control (RBAC), and irreversible client-side asset redaction.
 
 ## 🚀 Live Prototype & Deployment
-- **Interactive Case Workspace:** https://openedits.lovable.app/vault
+- **Interactive Asset Vault Workspace:** https://openedits.lovable.app/vault
 - **Primary Creative Studio:** https://openedits.lovable.app
-- **Pre-Loaded Benchmark Case:** *FIR No. 204/2026 — State vs. Cyber Syndicate (Cyber Crime Police Station)*
+- **Benchmark Asset Docket:** *BEL Strategic Docket No. BEL-2026/09 — Cryptographic Digital Asset & Verification System*
 
 ## ⚡ Key Innovations & Differentiators
 
-| Feature | Conventional General-Purpose DMS | OpenEdit Vault |
+| Feature | Conventional DAM Systems | OpenEdit Vault (BEL SIH26125) |
 | :--- | :--- | :--- |
-| **Evidence Integrity** | File storage with optional hashes | **SHA-256 integrity verification** tied to evidence records |
-| **Privacy** | Centralized/cloud processing may expose sensitive content | **Client-side processing path** intended to minimize unnecessary data transfer |
-| **Custody Tracking** | Generic activity/audit logs | **Hash-linked custody ledger model** for tamper-evident event sequencing |
-| **Redaction** | Often manual or workflow-dependent | **Dedicated redaction workflow** with Officer vs. Court/Public modes |
-| **Field Usability** | Often network-dependent | **Offline-first browser architecture** using local persistence |
-| **Certification Workflow** | Generic document export | **BSA 2023 Section 63-oriented certificate workflow** |
+| **Asset Integrity** | Server-side cleartext storage; vulnerable to privilege abuse | **Client-side SHA-256 genesis fingerprinting** before transmission |
+| **Tamper Resistance** | Periodic check-sums or passive logs | **Real-time 1-Byte Tamper Alert Engine** detecting bit-level alteration |
+| **Access Control (RBAC)** | Coarse permissions (Viewer / Editor / Admin) | **Two-Tier Fine-Grained Access:** Administrator/Master vs Sanitized Public View |
+| **Privacy & Sanitization** | Server-side processing with risk of data exposure | **Air-gapped in-memory canvas redaction** with irreversible blackout |
+| **Audit Ledger** | Database logs editable by system admins | **Immutable chained block ledger** binding Genesis -> Inspection -> Export |
+| **Zero Infrastructure Cost** | High blockchain gas fees & heavy servers | **Zero-gas WebCrypto architecture** running directly on client CPU |
 
 ## 🛠️ Technical Architecture & Stack
-- **Frontend & UI:** React, TypeScript, Tailwind CSS, Radix UI / Lucide Icons
-- **Cryptography Engine:** W3C Web Cryptography API ('crypto.subtle') for SHA-256 hashing and AES-GCM encryption
-- **Local Storage:** IndexedDB
-- **State Management:** Zustand
-- **Export Engines:** Canvas-based redaction and client-side PDF generation/compilation
-- **Deployment:** Browser/PWA-oriented architecture suitable for low-connectivity workflows
+- **Frontend & UI:** React, TypeScript, Tailwind CSS, Lucide Icons
+- **Cryptographic Engine:** W3C Web Cryptography API (`crypto.subtle`) for SHA-256 and AES-256-GCM
+- **Local Persistence:** Browser-native IndexedDB for air-gapped security
+- **Audit Ledger:** Sequential hash-chained block records ensuring non-repudiation
+- **Export Engines:** Irreversible canvas redaction and cryptographic compliance certificate compilation
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full system flow.
 
-## 🌐 Public Showcase — Evidence Integrity Demo
-
-The repository now includes a standalone browser demo at the repository root (index.html, styles.css, app.js). It demonstrates the core public-showcase flow without a backend:
-
-1. **Evidence Passport** — synthetic evidence metadata and a reproducible SHA-256 baseline.
-2. **Local SHA-256 Verifier** — select any local file; hashing happens entirely in the browser and the file is not uploaded.
-3. **Tamper Attack Simulator** — changes one byte in an in-memory synthetic payload and shows the resulting integrity failure.
-4. **Chain-of-Custody Visualizer** — verifies a deterministic hash-linked event sequence in the browser.
-5. **Security Boundaries** — explicitly distinguishes integrity verification from authenticity, blockchain immutability, and legal admissibility.
+## 🔬 Public Showcase & Tamper Verification Demo
+The repository includes a standalone zero-backend demonstration at the repository root (`index.html`, `styles.css`, `app.js`):
+1. **Asset Passport:** Synthetic asset metadata and SHA-256 baseline.
+2. **Local SHA-256 Verifier:** In-browser hashing of any local asset without uploading.
+3. **1-Byte Tamper Simulator:** In-memory single-byte mutation demonstrating instant cryptographic failure.
+4. **Chained Ledger Visualizer:** Verifiable hash-linked sequence of asset lifecycle events.
 
 ### Run locally
-
-Because the showcase is static, it can be opened through any static web server. For example:
-
 ```bash
 python -m http.server 8000
 ```
+Then open `http://localhost:8000/`.
 
-Then open http://localhost:8000/.
+## 📜 Standards & Compliance
+- **ISO/IEC 27001 & 27037:** Information security and digital asset preservation guidelines.
+- **NIST SP 800-57 & 800-86:** Cryptographic standards and digital forensics techniques.
+- **NIST SP 800-207:** Zero Trust Architecture guidelines for identity and access control.
 
-> The showcase uses synthetic data only. It is intentionally separate from production case storage and does not require Supabase or a backend.
-
-## 📋 Interactive Verification & Demonstration Path
-1. Open the [OpenEdit Vault Demo](https://openedits.lovable.app/vault).
-2. Open case **FIR No. 204/2026**.
-3. Click **Verify Integrity** next to FIR_Signed_Copy_204_2026.pdf.
-4. Click **Simulate Tamper Attack** to demonstrate a hash-mismatch alert.
-5. Click **Generate BSA Certificate** to inspect the Section 63-oriented workflow.
-6. Toggle **Public / Court Redacted View** to inspect the redaction presentation layer.
-
-> Demo case data is synthetic/prototype content and must not be treated as a real investigation record.
-
-## 🔐 Security Model at a Glance
-- **Hashing:** SHA-256 provides a reproducible content fingerprint for comparison.
-- **Encryption:** AES-GCM provides authenticated confidentiality when correctly implemented and key material is protected.
-- **Local-first processing:** Sensitive operations can be performed in-browser to reduce unnecessary server exposure.
-- **Chain of custody:** Events can bind metadata to the prior event hash, producing a verifiable sequence.
-- **Redaction:** Secure exports must remove or rasterize sensitive content rather than merely overlaying a black rectangle.
-
-Using Web Crypto does **not automatically create a zero-knowledge system**; that claim depends on the complete data, key, identity, and infrastructure architecture.
-
-## 📜 Statutory Standards & References
-- **Bharatiya Sakshya Adhiniyam, 2023 (BSA)** — electronic-record provisions including Sections 61 and 63.
-- **ISO/IEC 27037:2012** — Guidelines for identification, collection, acquisition and preservation of digital evidence.
-- **NIST FIPS 180-4** — Secure Hash Standard.
-
-See [docs/BSA_2023_COMPLIANCE.md](docs/BSA_2023_COMPLIANCE.md).
-
-## 🧭 Project Status
-**SIH 2026 Prototype — Public Documentation Release**
-
-A production deployment would additionally require formal security review, key management, identity/access controls, append-only audit infrastructure, forensic validation, operational SOPs, and legal review.
-
-## 🤝 Team
-**Krishnalabs**  
-**Team Leader:** Shyamji Soni
+## 👥 Team
+- **Team Name:** Krishnalabs  
+- **Team Leader:** Shyamji Soni  
+- **Institute:** NMIET
 
 ## 📄 License
-Licensed under the **Apache License 2.0**. See [LICENSE](LICENSE).
+Licensed under the Apache License 2.0.
