@@ -1,52 +1,93 @@
-const enc=new TextEncoder();
-const SYNTHETIC_PAYLOAD=enc.encode("OpenEdit Vault synthetic evidence: EV-204-017 | FIR 204/2026 | bank_transfer_report.pdf | captured 2026-08-14T10:42:18Z");
-let originalBytes=SYNTHETIC_PAYLOAD.slice();
-let originalHash="";
-const $=s=>document.querySelector(s);
-const $$=s=>[...document.querySelectorAll(s)];
-const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
-async function sha256(bytes){return hex(await crypto.subtle.digest("SHA-256",bytes));}
-function short(h){return h.slice(0,18)+"…"+h.slice(-18)}
+// OpenEdit Vault — BEL Defence Asset & DID Integrity Demo (SIH26125)
+const GENESIS_BYTES = new Uint8Array([
+  0x7f, 0x45, 0x4c, 0x46, 0x02, 0x01, 0x01, 0x00, 0x54, 0x61, 0x63, 0x74, 0x69, 0x63, 0x61, 0x6c,
+  0x5f, 0x44, 0x72, 0x6f, 0x6e, 0x65, 0x5f, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x21
+]);
 
-async function init(){
-  originalHash=await sha256(originalBytes);
-  $("#storedHash").textContent=originalHash;
-  $("#originalHash").textContent=originalHash;
-  buildTimeline();
-  $("#chainResult").textContent="Chain not verified yet. Click “Verify chain” to run the browser-side check.";
+let currentBytes = new Uint8Array(GENESIS_BYTES);
+let genesisHash = "";
+
+async function sha256Hex(buffer) {
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-$("#fileInput").addEventListener("change",async e=>{
- const file=e.target.files?.[0]; if(!file)return;
- const bytes=new Uint8Array(await file.arrayBuffer()); const hash=await sha256(bytes);
- $("#fileResult").classList.remove("hidden");
- $("#fileResult").innerHTML='<strong>'+escapeHtml(file.name)+'</strong><span class="muted">'+file.size.toLocaleString()+' bytes • SHA-256: </span><code>'+hash+'</code>';
- $("#compareHash").value=hash;
- $("#compareResult").classList.add("hidden");
-});
-$("#compareBtn").addEventListener("click",()=>{
- const expected=$("#compareHash").value.trim().toLowerCase(); const actual=$("#fileResult code")?.textContent?.trim().toLowerCase();
- if(!actual||!expected){showCompare("Choose a file and enter/confirm an expected hash first.","mismatch");return}
- showCompare(actual===expected?"MATCH — computed hash equals expected hash.":"MISMATCH — computed hash differs from expected hash.",actual===expected?"match":"mismatch");
-});
-function showCompare(t,c){const el=$("#compareResult");el.className="compare-result "+c;el.textContent=t;el.classList.remove("hidden")}
+const ROLES = {
+  COMMANDER: {
+    did: "did:bel:0x7F2a98B1A45C3b9E",
+    clearance: "TOP SECRET · Level 4",
+    class: "pill success"
+  },
+  ANALYST: {
+    did: "did:bel:analyst:lab-09",
+    clearance: "RESTRICTED · Level 2",
+    class: "pill info"
+  },
+  AUDITOR: {
+    did: "did:bel:auditor:ext-03",
+    clearance: "AUDIT-ONLY · Level 1",
+    class: "pill warning"
+  }
+};
 
-$("#copyHash").addEventListener("click",async()=>{await navigator.clipboard?.writeText(originalHash);$("#copyHash").textContent="✓";setTimeout(()=>$("#copyHash").textContent="⧉",1000)});
-$("#tamperBtn").addEventListener("click",async()=>{
- const mutated=originalBytes.slice(); mutated[mutated.length-1]^=1;
- const h=await sha256(mutated); $("#tamperedHash").textContent=h; $("#tamperState").textContent="INTEGRITY FAILED — bytes changed"; $("#integrityPill").textContent="INTEGRITY FAILED"; $("#integrityPill").className="pill"; $("#integrityPill").style.cssText="background:#32131b;color:#fb7185;border:1px solid #713040";
-});
-$("#resetTamper").addEventListener("click",()=>{$("#tamperedHash").textContent="";$("#tamperState").textContent="Not simulated";$("#integrityPill").textContent="INTEGRITY VERIFIED";$("#integrityPill").className="pill success";$("#integrityPill").style.cssText=""});
-
-const baseEvents=[
- {actor:"Seizing Officer • CCPS-07",time:"2026-08-14 10:42:18Z",action:"Evidence captured and registered"},
- {actor:"Forensic Analyst • FWS-07",time:"2026-08-14 11:16:42Z",action:"Integrity hash recorded"},
- {actor:"Investigating Officer • IO-21",time:"2026-08-14 13:05:09Z",action:"Evidence review logged"},
- {actor:"Forensic Analyst • FWS-07",time:"2026-08-15 09:12:31Z",action:"Verification checkpoint recorded"}
+const BLOCKS = [
+  { height: "#104,289", event: "CONTRACT_DEPLOYED", hash: "0x3f1a...88c2", did: "did:bel:admin", time: "10:40:12 UTC" },
+  { height: "#104,290", event: "ASSET_MINTED (Drone_Avionics_Firmware)", hash: "0x89e2...bb41", did: "did:bel:0x7F2a...98B1", time: "10:42:55 UTC" },
+  { height: "#104,291", event: "RBAC_GRANT (Analyst_Lab09)", hash: "0x94c1...aa03", did: "did:bel:0x7F2a...98B1", time: "10:45:00 UTC" }
 ];
-async function eventHash(previous,e){return sha256(enc.encode(previous+"|"+e.actor+"|"+e.time+"|"+e.action+"|EV-204-017"))}
-async function buildTimeline(){let prev="GENESIS"; const list=[]; for(const e of baseEvents){const current=await eventHash(prev,e);list.push({...e,previous:prev,current});prev=current} window.chain=list; $("#timeline").innerHTML=list.map((e,i)=>'<article class="event"><div class="event-head"><strong>'+escapeHtml(e.action)+'</strong><time>'+e.time+'</time></div><p>'+escapeHtml(e.actor)+'</p><code>prev: '+short(e.previous)+'<br>curr: '+short(e.current)+'</code></article>').join("")}
-$("#verifyChain").addEventListener("click",async()=>{let prev="GENESIS",ok=true; for(const e of window.chain||[]){const expected=await eventHash(prev,e);if(e.previous!==prev||e.current!==expected){ok=false;break}prev=e.current} const el=$("#chainResult");el.textContent=ok?"✓ CHAIN VALID — every event links to the expected previous hash.":"✕ CHAIN FAILED — a link or event hash does not match.";el.style.color=ok?"var(--green)":"var(--red)";el.style.background=ok?"#0a1710":"#241017";});
-$$("[data-step]").forEach(b=>b.addEventListener("click",()=>{const map={verify:"verifier",tamper:"tamper",chain:"chain"};document.getElementById(map[b.dataset.step]).scrollIntoView({behavior:"smooth",block:"start"})}));
-function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]))}
-init();
+
+async function init() {
+  genesisHash = await sha256Hex(GENESIS_BYTES);
+  document.getElementById("ledgerHash").innerText = genesisHash;
+  document.getElementById("currentHash").innerText = genesisHash;
+
+  // Render Ledger
+  const chainEl = document.getElementById("ledgerChain");
+  chainEl.innerHTML = BLOCKS.map(b => `
+    <div class="ledger-block" style="border: 1px solid #1e293b; background: #0f172a; padding: 12px; margin-bottom: 8px; border-radius: 6px; font-size: 13px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        <strong style="color: #38bdf8;">Block ${b.height} · ${b.event}</strong>
+        <span style="color: #94a3b8; font-size: 11px;">${b.time}</span>
+      </div>
+      <div style="font-family: monospace; color: #cbd5e1; font-size: 11px;">Merkle Root: ${b.hash} | Signer: ${b.did}</div>
+    </div>
+  `).join("");
+
+  // Role selector
+  document.getElementById("roleSelect").addEventListener("change", (e) => {
+    const roleData = ROLES[e.target.value] || ROLES.COMMANDER;
+    document.getElementById("activeDID").innerText = roleData.did;
+    const badge = document.getElementById("clearanceBadge");
+    badge.innerText = roleData.clearance;
+    badge.className = roleData.class;
+  });
+
+  // Action buttons
+  document.getElementById("btnVerify").addEventListener("click", async () => {
+    currentBytes = new Uint8Array(GENESIS_BYTES);
+    const curr = await sha256Hex(currentBytes);
+    document.getElementById("currentHash").innerText = curr;
+    document.getElementById("tamperAlertBox").style.display = "none";
+    const pill = document.getElementById("integrityPill");
+    pill.innerText = "GENESIS PROVENANCE VERIFIED ✓";
+    pill.className = "pill success";
+  });
+
+  document.getElementById("btnTamper").addEventListener("click", async () => {
+    // Flip 1 byte
+    currentBytes = new Uint8Array(GENESIS_BYTES);
+    currentBytes[12] = 0xAA; // altered byte
+    const tamperedHash = await sha256Hex(currentBytes);
+    document.getElementById("currentHash").innerText = tamperedHash;
+    document.getElementById("tamperAlertBox").style.display = "block";
+    const pill = document.getElementById("integrityPill");
+    pill.innerText = "TAMPER DETECTED ❌ (ASSET FROZEN)";
+    pill.className = "pill danger";
+  });
+
+  document.getElementById("btnLedger").addEventListener("click", () => {
+    document.getElementById("ledgerView").scrollIntoView({ behavior: "smooth" });
+  });
+}
+
+window.addEventListener("DOMContentLoaded", init);
