@@ -74,7 +74,7 @@ As showcased on our live [Pricing Portal](https://openedits.lovable.app/pricing)
 
 ---
 
-## 👥 Team Krishnalabs (NMIET)
+## 👥 Team Krishnalabs 
 - **Team Leader:** Shyamji Soni
 - **Problem Statement ID:** SIH26125 (Bharat Electronics Limited - BEL)
 - **Theme:** Information Security / Digital Asset Security
