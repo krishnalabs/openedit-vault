@@ -61,7 +61,7 @@ Then open `http://localhost:8000/`.
 ## 👥 Team
 - **Team Name:** Krishnalabs  
 - **Team Leader:** Shyamji Soni  
-- **Institute:** NMIET
+- **Institute:** SHRI VISVKARMA SKILL UNIVERSITY
 
 ## 📄 License
 Licensed under the Apache License 2.0.
