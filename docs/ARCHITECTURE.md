@@ -1,150 +1,72 @@
-# OpenEdit Vault — Architecture & Security Boundaries
+# OpenEdit Vault — System Architecture & Security Specification
+### *Smart India Hackathon 2026 | Problem Statement ID: SIH26125*
+> **Blockchain-Based Secure Platform for Identity, Access Control, and Digital Asset Management**  
+> **Target Organization:** Bharat Electronics Limited (BEL), Ministry of Defence  
+> **Team:** Krishnalabs | **Theme:** Information Security / Digital Asset Security
 
-## 1. Purpose
+---
 
-OpenEdit Vault is a browser-first prototype for sensitive investigation documents and demonstrations of cryptographic integrity verification, hash-linked custody events, redaction workflows, client-side encryption primitives, and Section 63-oriented certification output.
+## 1. Architectural Philosophy: Hybrid Zero-Trust Architecture
 
-The design goal is **verifiability without pretending that a browser application alone is an immutable government evidence system**.
+OpenEdit Vault solves the primary dilemma of enterprise and defence blockchain adoption:
+> **How to achieve immutable blockchain provenance without suffering public network gas fees, network latency, or exposing classified payload data to open nodes.**
 
-## 2. Logical Architecture
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    OpenEdit Vault UI                        │
-│ React + TypeScript + Tailwind                              │
-├─────────────────────────────────────────────────────────────┤
-│ Case Workspace                                              │
-│  ├─ Evidence Registry                                       │
-│  ├─ Integrity Verification                                  │
-│  ├─ Chain-of-Custody Timeline                               │
-│  ├─ Redaction / Presentation Views                          │
-│  └─ Section 63 Certificate Workflow                         │
-├─────────────────────────────────────────────────────────────┤
-│ Browser Security Layer                                      │
-│  ├─ Web Crypto API (SHA-256 / AES-GCM)                     │
-│  ├─ Canvas / PDF processing                                 │
-│  └─ IndexedDB local persistence                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 3. Evidence Integrity Flow
-
-For evidence artifact `E`:
+Our solution utilizes a **Dual-Layer Hybrid Security Paradigm**:
+1. **Execution & Privacy Layer (Client-Side Edge)**: Files are processed, parsed, hashed, and redacted exclusively in the client execution sandbox using **W3C WebCrypto API** and WebAssembly. Unencrypted binaries and schematics never touch an untrusted cloud server.
+2. **Consortium Provenance Layer (Blockchain)**: The `OpenEditAssetLedger.sol` smart contract immutably records asset genesis digests (SHA-256), cryptographic Merkle roots of audit events, and W3C DID-bound Role-Based Access Control (RBAC) grants.
 
 ```text
-digest_0 = SHA256(E)
+┌────────────────────────────────────────────────────────────────────────┐
+│                        CLIENT EXECUTION LAYER                          │
+│               (Air-Gapped In-Memory WebCrypto Sandbox)                 │
+├────────────────────────────────────────────────────────────────────────┤
+│  Ingested Digital Asset (Schematic, Firmware, Telemetry CSV)           │
+│         │                                                              │
+│         ▼                                                              │
+│  [SHA-256 Genesis Fingerprint] ──► [AES-256-GCM Envelope Encryption]  │
+│         │                                                              │
+│         ▼                                                              │
+│  [Dynamic RBAC Enforcement]    ──► [Client Redaction Engine]           │
+└─────────┬──────────────────────────────────────────────────────────────┘
+          │ (Zero Plaintext Exposed)
+          ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                    BLOCKCHAIN PROVENANCE LAYER                         │
+│               (OpenEditAssetLedger.sol / EVM Consortium)                │
+├────────────────────────────────────────────────────────────────────────┤
+│  • W3C DID Registry: did:bel:0x7F2a... ◄──► Role Tier (Commander/Auditor)
+│  • Asset Registry: Keccak256(UUID) ──► Genesis SHA-256 Digest          │
+│  • Merkle Audit Roots: Root(Block #104,291)                           │
+│  • Tamper Alert Event Emitter: Auto-freeze on SHA-256 discrepancy      │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-During verification:
+---
 
-```text
-digest_current = SHA256(E_current)
-verify := (digest_current === digest_0)
-```
+## 2. Cryptographic Security Flows
 
-A byte-level change should produce a different SHA-256 digest with overwhelming practical probability.
+### A. Asset Registration & Provenance Binding
+1. User with valid DID clearance selects an asset: `Tactical_Drone_Avionics_Firmware_v4.2.bin`.
+2. Browser calculates:
+   $$H_{genesis} = 	ext{SHA256}(	ext{AssetBytes})$$
+3. Transaction submitted to `OpenEditAssetLedger.registerAsset(...)` anchoring $H_{genesis}$, classification level (`TOP_SECRET`), and DID ownership.
 
-## 4. Hash-Linked Custody Ledger
+### B. 1-Byte Tamper Detection & Auto-Freezing
+1. When any user opens an asset, the client engine recomputes:
+   $$H_{current} = 	ext{SHA256}(	ext{CurrentBytes})$$
+2. Calls `verifyIntegrity(assetId, computedHash)` against the smart contract:
+   - If $H_{current} == H_{genesis}$ ➔ **STATUS: AUTHENTIC ✓**
+   - If $H_{current} 
+e H_{genesis}$ ➔ **TAMPER DETECTED ❌**. Client emits `reportTamper(...)`, triggering an on-chain `AssetFrozen` event and terminating unauthorized access.
 
-A custody event can be modeled as:
+### C. Role-Based Access Control (RBAC) Hierarchy
+- **Defence Commander (`DEFENCE_COMMANDER`)**: Full cryptographic authority (Register, Decrypt, Re-key, Grant/Revoke access).
+- **Security Analyst (`SECURITY_ANALYST`)**: Verification authority (Inspect metadata, run integrity verification, update Merkle roots).
+- **External Auditor (`AUDITOR`)**: Read-only verification (Tamper test execution, audit log inspection, watermarked export only).
 
-```text
-event_n = {
-  sequence,
-  timestamp,
-  actor,
-  action,
-  evidence_id,
-  previous_event_hash,
-  metadata,
-  event_hash
-}
-```
+---
 
-where `event_hash` is the SHA-256 digest of a canonical representation of the event fields excluding `event_hash` itself. The next event references that digest as `previous_event_hash`.
-
-```text
-Genesis Evidence Hash
-        │
-        ▼
-Block 01 ──hash──► Block 02 ──hash──► Block 03 ──hash──► Block 04
-```
-
-This is a **hash-linked ledger**, not a blockchain. It is tamper-evident when the verifier has an independently trusted anchor. A purely client-side ledger does not become immutable merely because its entries are hashed.
-
-## 5. Redaction Security Boundary
-
-A secure redaction export should create a new artifact in which sensitive content is actually removed, replaced, or rasterized.
-
-Unsafe:
-
-```text
-Original Text + Black Rectangle Overlay
-            ↓
-Sensitive bytes may still exist
-```
-
-Safer:
-
-```text
-Original Content
-      ↓
-Redaction Transform
-      ↓
-New Sanitized Artifact
-      ↓
-New SHA-256 Digest
-```
-
-The exported artifact should be independently inspected to confirm that hidden layers, metadata, OCR text, or embedded objects do not retain the redacted information.
-
-## 6. Encryption Boundary
-
-AES-GCM is authenticated encryption. A production implementation must define key generation, storage, wrapping, rotation, recovery, device enrollment, revocation, and compromise response.
-
-Using Web Crypto does **not automatically create a zero-knowledge system**. Zero-knowledge requires an end-to-end architecture in which plaintext and key material are not exposed to unintended service operators.
-
-## 7. Offline-First Model
-
-Selected workflows can persist locally:
-
-```text
-User Device
-   ├── IndexedDB
-   ├── Web Crypto
-   └── Local Editor State
-```
-
-For production, synchronization must be an authenticated, conflict-aware protocol with explicit authority over accepted custody events.
-
-## 8. Trust Zones
-
-- **Presentation:** UI displaying case/evidence status.
-- **Cryptographic processing:** browser cryptographic APIs.
-- **Local persistence:** IndexedDB on the endpoint.
-- **External authority:** production identity, key custody, policy, audit retention, and government integrations.
-
-The browser should not be treated as the sole trust anchor for high-stakes evidence management.
-
-## 9. Threat Model
-
-Relevant threats include compromised endpoints, malicious extensions, stolen devices, copied local storage, credential theft, malicious insiders, clock manipulation, replayed synchronization events, incomplete redaction, compromised certificate-signing authority, and administrator privilege abuse.
-
-Controls should be mapped to threats rather than relying on a single cryptographic primitive.
-
-## 10. Production Hardening Roadmap
-
-1. Hardware-backed or managed key custody.
-2. Strong identity and role-based access control.
-3. Append-only remote audit infrastructure.
-4. Trusted timestamping and clock-drift detection.
-5. Device attestation where appropriate.
-6. Offline event signatures with authenticated synchronization.
-7. Formal forensic validation procedures.
-8. Independent penetration testing and cryptographic review.
-9. Evidence retention / legal hold controls.
-10. Government and judicial integration under approved SOPs.
-
-## 11. Security Disclaimer
-
-OpenEdit Vault is a prototype. Hashing, encryption, and UI controls do not automatically establish statutory admissibility, evidentiary authenticity, or immutable custody. Those properties depend on implementation details, operational process, identity, trusted infrastructure, forensic methodology, and applicable law.
+## 3. Deployment & Live Verification
+- **Smart Contract Source:** `contracts/OpenEditAssetLedger.sol`
+- **Interactive Live Vault:** [https://openedits.lovable.app/vault](https://openedits.lovable.app/vault)
+- **Official Pricing & Procurement:** [https://openedits.lovable.app/pricing](https://openedits.lovable.app/pricing)
