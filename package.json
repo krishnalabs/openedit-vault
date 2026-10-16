@@ -1,0 +1,38 @@
+{
+  "name": "openedit-vault",
+  "version": "1.0.0",
+  "description": "Cryptographic digital asset provenance and access control platform for SIH26125 (BEL / Ministry of Defence)",
+  "main": "app.js",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "clean": "hardhat clean"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krishnalabs/openedit-vault.git"
+  },
+  "keywords": [
+    "sih2026",
+    "bel",
+    "blockchain",
+    "smart-contracts",
+    "hardhat",
+    "digital-asset-management",
+    "rbac",
+    "w3c-did",
+    "sha256",
+    "merkle-tree"
+  ],
+  "author": "Krishnalabs (Team ID: 185109)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/krishnalabs/openedit-vault/issues"
+  },
+  "homepage": "https://github.com/krishnalabs/openedit-vault#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "ethers": "^6.13.0",
+    "hardhat": "^2.22.18"
+  }
+}

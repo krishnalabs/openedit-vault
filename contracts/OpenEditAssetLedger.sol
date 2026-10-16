@@ -44,6 +44,10 @@ contract OpenEditAssetLedger {
     // DID to Role mapping
     mapping(string => UserRole) public didRoles;
 
+    // Cryptographic DID-to-Address and Address-to-DID bindings to prevent spoofing
+    mapping(string => address) public didToAddress;
+    mapping(address => string) public addressToDID;
+
     // AssetId to DigitalAsset mapping
     mapping(bytes32 => DigitalAsset) public assets;
 
@@ -82,7 +86,10 @@ contract OpenEditAssetLedger {
     );
 
     event AssetFrozen(bytes32 indexed assetId, string reason, uint256 timestamp);
+    event AssetUnfrozen(bytes32 indexed assetId, string resolverDID, string reason, uint256 timestamp);
     event MerkleRootAnchored(bytes32 indexed assetId, bytes32 merkleRoot, uint256 timestamp);
+    event DIDBound(string indexed did, address indexed account, uint256 timestamp);
+    event DIDUnbound(string indexed did, address indexed account, uint256 timestamp);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "OpenEdit: Caller is not system admin");
@@ -91,14 +98,85 @@ contract OpenEditAssetLedger {
 
     constructor() {
         admin = msg.sender;
-        // Seed default BEL Defence Commander role for testing
+        // Seed default BEL roles for testing & consortium bootstrapping
         didRoles["did:bel:0x7F2a98B1A45C3b9E"] = UserRole.DEFENCE_COMMANDER;
         didRoles["did:bel:analyst:lab-09"] = UserRole.SECURITY_ANALYST;
         didRoles["did:bel:auditor:ext-03"] = UserRole.AUDITOR;
     }
 
+    /**
+     * @notice Bind a W3C DID to an authorized Ethereum address
+     */
+    function bindDID(string memory did, address account) external onlyAdmin {
+        require(account != address(0), "OpenEdit: Invalid account address");
+        require(bytes(did).length > 0, "OpenEdit: DID cannot be empty");
+
+        // Clear existing reverse binding if previously set
+        address previousAccount = didToAddress[did];
+        if (previousAccount != address(0) && previousAccount != account) {
+            delete addressToDID[previousAccount];
+            emit DIDUnbound(did, previousAccount, block.timestamp);
+        }
+
+        didToAddress[did] = account;
+        addressToDID[account] = did;
+
+        emit DIDBound(did, account, block.timestamp);
+    }
+
+    /**
+     * @notice Unbind a W3C DID from an Ethereum address
+     */
+    function unbindDID(string memory did) external onlyAdmin {
+        address boundAccount = didToAddress[did];
+        require(boundAccount != address(0), "OpenEdit: DID is not bound");
+
+        delete addressToDID[boundAccount];
+        delete didToAddress[did];
+
+        emit DIDUnbound(did, boundAccount, block.timestamp);
+    }
+
+    /**
+     * @notice Set role for a specific DID
+     */
     function setRole(string memory did, UserRole role) external onlyAdmin {
         didRoles[did] = role;
+    }
+
+    /**
+     * @notice Set role and bind DID to account in a single atomic transaction
+     */
+    function setRoleAndBindDID(
+        string memory did,
+        UserRole role,
+        address account
+    ) external onlyAdmin {
+        require(account != address(0), "OpenEdit: Invalid account address");
+        require(bytes(did).length > 0, "OpenEdit: DID cannot be empty");
+
+        didRoles[did] = role;
+        didToAddress[did] = account;
+        addressToDID[account] = did;
+
+        emit DIDBound(did, account, block.timestamp);
+    }
+
+    /**
+     * @dev Internal helper verifying that msg.sender is authorized to act under callerDID
+     */
+    function _verifyCallerDID(string memory callerDID) internal view {
+        if (msg.sender == admin) {
+            return; // System admin has superuser emergency authority
+        }
+
+        address boundAddress = didToAddress[callerDID];
+        if (boundAddress != address(0)) {
+            require(msg.sender == boundAddress, "OpenEdit: Caller not authorized for this DID");
+        } else {
+            // If the DID is not explicitly bound, an arbitrary address cannot claim it
+            revert("OpenEdit: Unbound DID requires admin caller");
+        }
     }
 
     /**
@@ -113,6 +191,9 @@ contract OpenEditAssetLedger {
         bytes32 initialMerkleRoot
     ) external {
         require(!assets[assetId].exists, "OpenEdit: Asset already registered");
+
+        _verifyCallerDID(ownerDID);
+
         require(
             didRoles[ownerDID] == UserRole.DEFENCE_COMMANDER ||
             didRoles[ownerDID] == UserRole.SECURITY_ANALYST ||
@@ -168,10 +249,38 @@ contract OpenEditAssetLedger {
         string memory reporterDID
     ) external {
         require(assets[assetId].exists, "OpenEdit: Asset not found");
+        require(!assets[assetId].isFrozen, "OpenEdit: Asset is already frozen");
+        require(
+            mismatchHash != assets[assetId].genesisSha256,
+            "OpenEdit: Reported hash matches authentic genesis hash"
+        );
+
         assets[assetId].isFrozen = true;
 
         emit TamperAlertLogged(assetId, mismatchHash, reporterDID, block.timestamp);
         emit AssetFrozen(assetId, "Cryptographic hash mismatch alert", block.timestamp);
+    }
+
+    /**
+     * @notice Resolve tamper alert and unfreeze asset after forensic verification
+     */
+    function resolveTamperAndUnfreeze(
+        bytes32 assetId,
+        string memory resolverDID,
+        string memory resolutionReason
+    ) external {
+        require(assets[assetId].exists, "OpenEdit: Asset not found");
+        require(assets[assetId].isFrozen, "OpenEdit: Asset is not frozen");
+
+        _verifyCallerDID(resolverDID);
+
+        require(
+            didRoles[resolverDID] == UserRole.DEFENCE_COMMANDER || msg.sender == admin,
+            "OpenEdit: Insufficient privilege to unfreeze asset"
+        );
+
+        assets[assetId].isFrozen = false;
+        emit AssetUnfrozen(assetId, resolverDID, resolutionReason, block.timestamp);
     }
 
     /**
@@ -184,6 +293,9 @@ contract OpenEditAssetLedger {
     ) external {
         require(assets[assetId].exists, "OpenEdit: Asset not found");
         require(!assets[assetId].isFrozen, "OpenEdit: Asset is frozen due to security alert");
+
+        _verifyCallerDID(callerDID);
+
         require(
             didRoles[callerDID] == UserRole.DEFENCE_COMMANDER || msg.sender == admin,
             "OpenEdit: Insufficient privilege to grant asset access"
@@ -191,6 +303,27 @@ contract OpenEditAssetLedger {
 
         assetAccessGrants[assetId][targetDID] = true;
         emit AccessGranted(assetId, targetDID, callerDID, block.timestamp);
+    }
+
+    /**
+     * @notice Revoke access from a specific DID under RBAC policy
+     */
+    function revokeAccess(
+        bytes32 assetId,
+        string memory targetDID,
+        string memory revokerDID
+    ) external {
+        require(assets[assetId].exists, "OpenEdit: Asset not found");
+
+        _verifyCallerDID(revokerDID);
+
+        require(
+            didRoles[revokerDID] == UserRole.DEFENCE_COMMANDER || msg.sender == admin,
+            "OpenEdit: Insufficient privilege to revoke asset access"
+        );
+
+        assetAccessGrants[assetId][targetDID] = false;
+        emit AccessRevoked(assetId, targetDID, revokerDID, block.timestamp);
     }
 
     /**
@@ -202,6 +335,10 @@ contract OpenEditAssetLedger {
         string memory callerDID
     ) external {
         require(assets[assetId].exists, "OpenEdit: Asset not found");
+        require(!assets[assetId].isFrozen, "OpenEdit: Asset is frozen due to security alert");
+
+        _verifyCallerDID(callerDID);
+
         require(
             didRoles[callerDID] == UserRole.DEFENCE_COMMANDER ||
             didRoles[callerDID] == UserRole.SECURITY_ANALYST ||

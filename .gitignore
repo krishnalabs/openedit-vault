@@ -43,3 +43,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Hardhat
+artifacts/
+cache/
+typechain-types/
